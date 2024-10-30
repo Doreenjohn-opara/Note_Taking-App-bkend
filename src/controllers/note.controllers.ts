@@ -1,5 +1,6 @@
 import express, { RequestHandler, Request, Response, NextFunction } from "express";
-import Note from "../models/note.models";
+import Note from "../models/Note.models";
+import Collaboration from "../models/collaboration.model";
 
 // health check
 export const health = async (req: Request, res: Response) => {
@@ -13,8 +14,8 @@ export const createNote = async (req: Request, res: Response) => {
     const note = new Note({ title, content });
     await note.save();
     res.status(201).json(note);
-  } catch (error) {
-    res.status(500).json({ message: "Error creating note", error });
+  } catch (error: any) {
+    res.status(500).json({ data: null, "Error creating note: ": error.message });
   }
 };
 
@@ -23,8 +24,8 @@ export const getAllNotes = async (req: Request, res: Response) => {
   try {
     const notes = await Note.find();
     res.status(200).json(notes);
-  } catch (error) {
-    res.status(500).json({ message: "Error fetching notes", error });
+  } catch (error: any) {
+    res.status(500).json({ data: null, "Error fetching notes": error.message });
   }
 };
 
@@ -39,8 +40,8 @@ export const getNoteById:RequestHandler = async (req, res, next) => {
     }
 
   res.status(200).json(note);
-  } catch (error) {
-    res.status(500).json({ message: 'Error fetching note', error });
+  } catch (error: any) {
+    res.status(500).json({ data: null, 'Error fetching note': error.message });
   }
 };
 
@@ -54,8 +55,8 @@ export const updateNote = async (req: Request, res: Response) => {
     res.status(404).json({ message: "Note not found" });
     }
     res.status(200).json(note);
-  } catch (error) {
-    res.status(500).json({ message: "Error updating note", error });
+  } catch (error: any) {
+    res.status(500).json({ data: null, "Error updating note": error.message });
   }
 };
 
@@ -67,8 +68,8 @@ export const deleteNote = async (req: Request, res: Response) => {
       res.status(404).json({ message: "Note not found" });
     }
     res.status(200).json({ message: "Note deleted successfully" });
-  } catch (error) {
-    res.status(500).json({ message: "Error deleting note", error });
+  } catch (error: any) {
+    res.status(500).json({ data: null, "Error deleting note": error });
   }
 };
 
@@ -78,9 +79,36 @@ export const getNotesByCategory = async (req: Request, res:Response) => {
     const { category } = req.params;
     const note = await Note.findOne({category});
     res.status(200).json(note);
-  } catch (error) {
-    res.status(401).json({message: "Error fetching note", error })
+  } catch (error: any) {
+    res.status(401).json({data: null, "Error fetching note": error.message })
   }
 }
 
+// Sharing Notes via Email or Links
+export const shareNote = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const note = await Note.findById(id);
+    if (!note) return res.status(404).json({ message: 'Note not found' });
+
+    const shareableLink = `${process.env.CLIENT_URL}/notes/${id}`;
+    res.json({ link: shareableLink });
+  } catch (error:any) {
+    res.status(400).json({ error: error.message });
+  }
+};
+
 // 
+export const addCollaborator = async (req: Request, res: Response) => {
+  try {
+    const { noteId, userId } = req.body;
+    const collaboration = await Collaboration.findOneAndUpdate(
+      { noteId },
+      { $addToSet: { users: userId } },
+      { new: true, upsert: true }
+    );
+    res.json(collaboration);
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+};
