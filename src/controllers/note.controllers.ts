@@ -21,6 +21,7 @@ export const createNote = async (req: Request, res: Response) => {
 
 // Get all notes
 export const getAllNotes = async (req: Request, res: Response) => {
+  console.log(req.user)
   try {
     const notes = await Note.find();
     res.status(200).json(notes);
@@ -36,7 +37,7 @@ export const getNoteById:RequestHandler = async (req, res, next) => {
     const note = await Note.findById(id);
 
     if (!note) {
-    res.status(404).json({ message: "Note not found" });
+    throw new Error ("Note not found" );
     }
 
   res.status(200).json(note);
@@ -52,7 +53,7 @@ export const updateNote = async (req: Request, res: Response) => {
       new: true,
     });
     if (!note) {
-    res.status(404).json({ message: "Note not found" });
+      throw new Error ("Note not found" );
     }
     res.status(200).json(note);
   } catch (error: any) {
@@ -65,7 +66,7 @@ export const deleteNote = async (req: Request, res: Response) => {
   try {
     const note = await Note.findByIdAndDelete(req.params.id);
     if (!note) {
-      res.status(404).json({ message: "Note not found" });
+      throw new Error ("Note not found" );
     }
     res.status(200).json({ message: "Note deleted successfully" });
   } catch (error: any) {
@@ -89,7 +90,9 @@ export const shareNote = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const note = await Note.findById(id);
-    if (!note) return res.status(404).json({ message: 'Note not found' });
+    if (!note) {
+      throw new Error ("Note not found" );
+    }
 
     const shareableLink = `${process.env.CLIENT_URL}/notes/${id}`;
     res.json({ link: shareableLink });

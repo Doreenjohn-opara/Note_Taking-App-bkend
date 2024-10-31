@@ -14,7 +14,7 @@ const noteSchema = new Schema<INote>(
 
      category: {
         type: String,
-        required: true
+        // required: true
      },
 
      },
