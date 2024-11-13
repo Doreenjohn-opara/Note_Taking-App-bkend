@@ -4,7 +4,9 @@ import { ICollaboration } from '../utils/collaboration.utils';
 const CollaborationSchema: Schema = new Schema ({
   noteId: { type: String, required: true },
   users: [{ type: String, required: true }],
-});
+},
+  { timestamps: true }
+);
 
 const Collaboration = mongoose.model<ICollaboration>('Collaboration', CollaborationSchema);
 

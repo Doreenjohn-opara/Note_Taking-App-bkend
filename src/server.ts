@@ -20,7 +20,7 @@ app.use(cors());       // CORS: is a security feature implemented in web browser
 
 // Routes
 app.use('/api/notes', noteRouter);    // Mount the router under a specific path
-app.use('/api/notes', authRouter);
+app.use('/api/auth', authRouter);
 
 
 const server = app.listen(PORT, () => {

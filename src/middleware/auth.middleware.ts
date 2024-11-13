@@ -1,8 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { AuthenticatedRequest } from '../utils/auth.utils';
 
-const protect = (req:Request, res:Response, next:NextFunction): void => {
+const protect = async (req:Request, res:Response, next:NextFunction): Promise<void> => {
 
   const authHeader = req.headers.authorization;
 
@@ -23,7 +22,7 @@ const protect = (req:Request, res:Response, next:NextFunction): void => {
       const decoded = jwt.verify(token, process.env.JWT_SECRET as string);
 
       // Cast req to AuthenticatedRequest after validation
-      (req as unknown as AuthenticatedRequest).user = decoded;
+      req.user = decoded;
       next(); // Pass control to the next middleware or route handler
     } catch (err) {
     res.status(403).json({ message: 'Forbidden: Invalid token' });

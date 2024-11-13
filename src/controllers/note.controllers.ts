@@ -1,6 +1,7 @@
 import express, { RequestHandler, Request, Response, NextFunction } from "express";
 import Note from "../models/Note.models";
 import Collaboration from "../models/collaboration.model";
+import User from "../models/User.models";
 
 // health check
 export const health = async (req: Request, res: Response) => {
@@ -11,7 +12,13 @@ export const health = async (req: Request, res: Response) => {
 export const createNote = async (req: Request, res: Response) => {
   try {
     const { title, content } = req.body;
-    const note = new Note({ title, content });
+    const userId = (req as any).user.id;
+
+    if (!userId) {
+      res.status(401).json({ message: "Unauthorized access" });
+    }
+
+    const note = new Note({ title, content, user: userId });
     await note.save();
     res.status(201).json(note);
   } catch (error: any) {
@@ -22,10 +29,18 @@ export const createNote = async (req: Request, res: Response) => {
 // Get all notes
 export const getAllNotes = async (req: Request, res: Response) => {
   try {
-    const notes = await Note.find();
+    // req.userId is added by the authMiddleware after decoding the JWT
+    const userId = (req as any).user.id;
+
+    if (!userId) {
+      res.status(401).json({ message: "Unauthorized access" });
+    }
+
+    const notes = await Note.find({user: userId}).sort({createdAt: - 1});
     res.status(200).json(notes);
   } catch (error: any) {
     res.status(500).json({ data: null, "Error fetching notes": error.message });
+    return; 
   }
 };
 
@@ -36,12 +51,13 @@ export const getNoteById:RequestHandler = async (req, res, next) => {
     const note = await Note.findById(id);
 
     if (!note) {
-    res.status(404).json({ message: "Note not found" });
+    throw new Error ("Note not found" );
     }
 
   res.status(200).json(note);
   } catch (error: any) {
     res.status(500).json({ data: null, 'Error fetching note': error.message });
+    return; 
   }
 };
 
@@ -52,11 +68,13 @@ export const updateNote = async (req: Request, res: Response) => {
       new: true,
     });
     if (!note) {
-    res.status(404).json({ message: "Note not found" });
+      throw new Error ("Note not found" );
     }
     res.status(200).json(note);
+    return; 
   } catch (error: any) {
     res.status(500).json({ data: null, "Error updating note": error.message });
+    return; 
   }
 };
 
@@ -65,11 +83,13 @@ export const deleteNote = async (req: Request, res: Response) => {
   try {
     const note = await Note.findByIdAndDelete(req.params.id);
     if (!note) {
-      res.status(404).json({ message: "Note not found" });
+      throw new Error ("Note not found" );
     }
     res.status(200).json({ message: "Note deleted successfully" });
+    return; 
   } catch (error: any) {
     res.status(500).json({ data: null, "Error deleting note": error });
+    return; 
   }
 };
 
@@ -79,8 +99,10 @@ export const getNotesByCategory = async (req: Request, res:Response) => {
     const { category } = req.params;
     const note = await Note.findOne({category});
     res.status(200).json(note);
+    return; 
   } catch (error: any) {
     res.status(401).json({data: null, "Error fetching note": error.message })
+    return; 
   }
 }
 
@@ -89,12 +111,16 @@ export const shareNote = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const note = await Note.findById(id);
-    if (!note) return res.status(404).json({ message: 'Note not found' });
+    if (!note) {
+      throw new Error ("Note not found" );
+    }
 
     const shareableLink = `${process.env.CLIENT_URL}/notes/${id}`;
     res.json({ link: shareableLink });
+    return; 
   } catch (error:any) {
     res.status(400).json({ error: error.message });
+    return;
   }
 };
 
@@ -108,7 +134,9 @@ export const addCollaborator = async (req: Request, res: Response) => {
       { new: true, upsert: true }
     );
     res.json(collaboration);
+    return; 
   } catch (error: any) {
     res.status(400).json({ error: error.message });
+    return; 
   }
 };
